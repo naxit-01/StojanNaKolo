@@ -75,7 +75,7 @@ def openbrowser():
         time.sleep(5)
         body = driver.find_element(By.TAG_NAME,"body")
         body.send_keys(Keys.TAB)
-        
+
         body.send_keys(Keys.TAB)
         body.send_keys(Keys.TAB)
         #body.send_keys(Keys.CONTROL, 'v')
@@ -110,8 +110,8 @@ Credentials = {
 
 MyAccounts = [
     "https://twitter.com/CT24zive",
-    "https://twitter.com/strakovka",
-    "https://twitter.com/HradOfficial"
+    #"https://twitter.com/strakovka",
+    #"https://twitter.com/HradOfficial"
 ]
 
 MyXPATHS = {
@@ -125,9 +125,16 @@ MyXPATHS = {
     "name":"/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/div/div/div/div[2]/div[1]/div/div[2]/div/div/div/span",
     "description":"/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/div/div/div/div[3]/div/div/span",
     "labels":"/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/div/div/div/div[4]",
+    
     "following":"/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/div/div/div/div[5]/div[1]/a/span[1]/span",
+    "following_all" :"/html/body/div[1]/div/div/div[2]/main/div/div/div/div/div/section/div/div",
+    "following_name":"/div/div/div/div/div[2]/div[1]/div[1]/div/div[2]/div/a/div/div/span",
+    "followers_all" : "/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/section/div/div",
+
     "followers":"/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/div/div/div/div[5]/div[2]/a/span[1]/span",
     
+
+
     "tweets"        :"/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/div/section/div/div",             
     "tweet"         :"/html/body/div[1]/div/div/div[2]/main/div/div/div/div[1]/div/div[3]/div/div/section/div/div/div[",
     "tweet_text"    :"]/div/div/article/div/div/div[2]/div[2]/div[2]/div/span",
@@ -146,15 +153,7 @@ MyXPATHS = {
 class readAccount:
     def __init__(self):
         pass
-    '''def retry(func):
-        def wrapper(*args, **kwargs):
-            while True:
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    print(f"Error: {e}")
-                    time.sleep(1)
-        return wrapper'''
+
     def retry(max_retries=2, wait_time=1):
         def decorator(func):
             def wrapper(*args, **kwargs):
@@ -174,21 +173,87 @@ class readAccount:
         return driver.find_element(By.XPATH, path)
     
     def read_header():
+        def getAllDivs(key):
+            el = readAccount.findElement(str(key))
+            html = el.get_attribute('innerHTML')
+            soup = BeautifulSoup(html, "html.parser")
+            divs = soup.find_all("div", recursive=False)
+            return divs
+        
+        def readAllDivs(key):
+            names=[]
+            repetition = 0
+            while True and len(names)<50: #opakuje do te doby nez nacte dany pocet tweetu
+                repetition += 1
+                try:
+                    for x,html in enumerate(getAllDivs(key)):
+                        name=""
+                        for text in html.find_all('span'): 
+                            if '@' in text.get_text():
+                                name = text.get_text()[1:]
+                                break
+
+                        if name in names or name=="": pass
+                        else: 
+                            names.append(name)
+                except Exception as e:
+                    readAccount.printToLog(e)
+                    print(e)
+                    pass
+
+                scrollHeight= 1000
+                driver.execute_script('\
+                window.scrollTo(0,' + str(scrollHeight*repetition)+ ')')
+                new_height = driver.execute_script('\
+                return document.body.scrollHeight')
+
+                '''driver.execute_script('\
+                window.scrollTo(0,document.body.scrollHeight)')
+                new_height = driver.execute_script('\
+                return document.body.scrollHeight')'''
+
+                # checking if we have reached the bottom of the page
+                '''if new_height == last_height:
+                    break'''
+                if x==0: break
+
+                last_height = new_height
+
+            return names
+
+        def strtonumber(s):
+            if "K" in s:
+                return int(float(s.replace("K", "")) * 1000)
+            elif "M" in s:
+                return int(float(s.replace("M", "")) * 1000000)
+            else: return int(float(s))
+    
+
         header = {}
         header["name"] = readAccount.findElement(MyXPATHS['name']).text
         #header["header"] = driver.find_element(By.XPATH, MyXPATHS['header']).text      
         header["description"] = driver.find_element(By.XPATH, MyXPATHS['description']).text
-        header["followers"] = driver.find_element(By.XPATH, MyXPATHS['followers']).text
-        header["following"] = driver.find_element(By.XPATH, MyXPATHS['following']).text
-        """header["labels"]=[]
-        for item in driver.find_elements(By.XPATH, MyXPATHS['labels']):
-            header["labels"].append(item.text) """
-        header["labels"] = driver.find_element(By.XPATH, MyXPATHS['labels']).text
-        header["number_of_tweets"] = driver.find_element(By.XPATH, MyXPATHS['number_of_tweets']).text
+        header["followers"] = strtonumber(driver.find_element(By.XPATH, MyXPATHS['followers']).text)
+        header["following"] = strtonumber(driver.find_element(By.XPATH, MyXPATHS['following']).text)
+        labels=driver.find_element(By.XPATH, MyXPATHS['labels']).text.split("Joined ")
+        header["labels"] = labels[0]
+        header["born"] = labels[1]
+        header["number_of_tweets"] = strtonumber(driver.find_element(By.XPATH, MyXPATHS['number_of_tweets']).text.replace(" Tweets", ""))
         header["profil_photo"] = Image.open(BytesIO(urllib.request.urlopen(readAccount.findElement(MyXPATHS['profil_photo']).get_attribute('src')).read()))
         header["main_photo"] = Image.open(BytesIO(urllib.request.urlopen(readAccount.findElement(MyXPATHS['main_photo']).get_attribute('src')).read()))
         header["profil_photo"].save(f"{header['name']}_profilphoto.jpg")
         header["main_photo"].save(f"{header['name']}_mainphoto.jpg")
+
+        driver.get(f"https://twitter.com/{header['name']}/following")
+        time.sleep(2)
+        header["following_names"] = readAllDivs(MyXPATHS["following_all"])
+
+        driver.get(f"https://twitter.com/{header['name']}/followers")
+        time.sleep(2)
+        header["followers_names"] = readAllDivs(MyXPATHS["followers_all"])
+
+        driver.get(f"https://twitter.com/{header['name']}")
+        time.sleep(2)
 
         return header
 
@@ -347,6 +412,7 @@ def readlist(MyAccounts, driver):
         #go to Twitter's Homepage
         driver.get(link)
         dicti={}
+
         dicti["header"]=readAccount.read_header()
         dicti["tweets"], driver = readAccount.scroll_to_bottom(driver=driver)
         data.append(dicti)
@@ -354,6 +420,11 @@ def readlist(MyAccounts, driver):
 
 driver = openbrowser()
 data = readlist(MyAccounts, driver)
+
+for response in data:
+    import json
+    with open("data.json", "w") as f:
+        json.dump(response, f)
 
 print("end")
 

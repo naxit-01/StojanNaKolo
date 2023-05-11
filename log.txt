@@ -84,3 +84,37 @@
 'time'
 'time'
 'time'
+'/html/body/div[1]/div/div/div[2]/main/div/div/div/div/div/section/div/div'
+unhashable type: 'slice'
+Max retries exceeded.
+Max retries exceeded.
+Max retries exceeded.
+Max retries exceeded.
+Max retries exceeded.
+Max retries exceeded.
+Max retries exceeded.
+list index out of range
+list index out of range
+list index out of range
+list index out of range
+list index out of range
+list index out of range
+Max retries exceeded.
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
+'time'
